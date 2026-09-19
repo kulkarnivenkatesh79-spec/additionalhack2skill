@@ -1,0 +1,21 @@
+MASTER SERVICES & CONSULTING AGREEMENT
+
+This Agreement is entered into on October 1, 2026, by and between Apex Cloud Solutions LLC ('Company') and Elena Vance ('Consultant').
+
+1. SCOPE OF SERVICES
+Consultant shall render digital accessibility auditing, WCAG 2.1 compliance remediation, and software engineering services as mutually outlined in Statement of Work (SOW) #1.
+
+2. COMPENSATION & PAYMENT TERMS
+Company agrees to compensate Consultant at the agreed rate of $175.00 per hour. Consultant shall invoice Company bi-weekly. Company shall pay all undisputed invoices within thirty (30) days of receipt. In the event of a dispute, Company shall notify Consultant in writing within ten (10) business days.
+
+3. INTELLECTUAL PROPERTY RIGHTS
+Company shall own all worldwide right, title, and interest in and to all deliverables, custom code, documentation, and work product developed specifically for Company under this Agreement upon full payment of all related invoices. Consultant retains ownership of pre-existing background tools and libraries.
+
+4. CONFIDENTIALITY
+Each party agrees to hold in strict confidence all proprietary technical, financial, and business information disclosed by the other party. Confidentiality obligations shall endure for three (3) years following termination.
+
+5. TERMINATION
+Either party may terminate this Agreement without cause upon providing thirty (30) days prior written notice. Either party may terminate immediately upon written notice if the other party materially breaches this Agreement and fails to cure within fifteen (15) days.
+
+6. LIMITATION OF LIABILITY
+Neither party shall be liable for indirect, incidental, special, or consequential damages. Total aggregate liability arising out of this Agreement shall not exceed the total fees paid to Consultant in the twelve (12) months preceding the claim.

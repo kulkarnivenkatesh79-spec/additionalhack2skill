@@ -1,0 +1,18 @@
+ENTERPRISE CLOUD SERVICES AGREEMENT (UNILATERAL / HIGH RISK)
+
+NOTICE: BY ACCESSING OR USING THE SERVICES, CUSTOMER ACCEPTS ALL TERMS HEREIN.
+
+1. UNILATERAL TERMINATION & IMMEDIATE DATA FORFEITURE
+Vendor reserves the unrestricted right to terminate Customer access, delete all hosted databases, and destroy backup images at any time, for any reason or no reason, without prior notice. Vendor assumes zero liability for business interruption or permanent data loss resulting from such termination.
+
+2. UNLIMITED UNILATERAL INDEMNIFICATION
+Customer agrees to defend, indemnify, and hold harmless Vendor, its officers, directors, affiliates, and contractors from and against ANY and all claims, regulatory penalties, legal fees, and liabilities arising out of or related to this Agreement, without limitation, even if resulting from Vendor negligence.
+
+3. AUTOMATIC PRICE ESCALATION & PERPETUAL LOCK-IN
+Subscription terms automatically renew for successive 3-year periods unless Customer cancels by registered certified mail exactly 180 days prior to expiration. Vendor reserves the right to increase annual subscription fees by up to 45% per renewal without Customer approval.
+
+4. MANDATORY OFFSHORE ARBITRATION AT CUSTOMER EXPENSE
+Any dispute, claim, or controversy shall be resolved solely by binding confidential arbitration administered in the Cayman Islands under local procedural rules. Customer agrees to pay all arbitrator fees, administrative costs, and Vendor travel expenses in advance. Class actions and jury trials are strictly waived.
+
+5. INTELLECTUAL PROPERTY SURRENDER
+Customer irrevocably assigns and transfers to Vendor all right, title, and ownership in any feedback, feature requests, workflows, and customized data structures submitted to the platform.

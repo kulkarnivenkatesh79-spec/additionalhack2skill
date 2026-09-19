@@ -1,0 +1,21 @@
+MUTUAL NON-DISCLOSURE AGREEMENT (MODIFIED - DOCUMENT B)
+
+This Non-Disclosure Agreement is made between Alpha Corp ('Recipient') and Beta Innovations ('Exclusive Discloser').
+
+1. PURPOSE
+The parties wish to evaluate Beta Innovations proprietary machine learning pipeline.
+
+2. DEFINITION OF CONFIDENTIAL INFORMATION
+Confidential Information means any oral, visual, or written data disclosed by Beta Innovations. Marking as 'Confidential' is NOT required. Alpha Corp shall have no right to claim trade secret protection under this Agreement.
+
+3. RESTRICTIVE NON-SOLICIT OBLIGATION (ADDED CLAUSE)
+Alpha Corp agrees that for a period of three (3) years, it shall not solicit, interview, or hire any engineer, executive, or contractor of Beta Innovations under penalty of liquidated damages of $250,000 per violation.
+
+4. OBLIGATIONS & STANDARD OF CARE
+Alpha Corp agrees to exercise strict and absolute liability protection over Beta Innovations data. Any inadvertent leak shall constitute an immediate material breach.
+
+5. DURATION & PERPETUAL TIMELINE (MODIFIED CLAUSE)
+Confidentiality obligations shall continue indefinitely and perpetually in perpetuity, surviving any termination of business discussions.
+
+6. GOVERNING LAW & VENUE (MODIFIED CLAUSE)
+This Agreement shall be governed exclusively by the courts of Delaware, and Alpha Corp agrees to waive all rights to trial by jury.
