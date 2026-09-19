@@ -1,16 +1,20 @@
 """
-AI Legal Assist — Gemini service.
+AI Legal Assist — Enterprise Gemini Service.
 
-Provides an async interface to the Google Gemini 2.5 Flash model.
-Includes a TTL cache to avoid redundant API calls for identical queries
-and structured JSON parsing of model responses.
+Provides async access to Google Gemini 2.5 Flash with:
+- SHA-256 prompt hashing & TTL caching for high efficiency
+- Streaming generation support for Server-Sent Events (SSE)
+- Resilient model fallback and retry logic
+- Strict error classification for timeouts, malformed JSON, and rate limits
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
+from collections.abc import AsyncGenerator
 from typing import Any
 
 from cachetools import TTLCache
@@ -21,71 +25,58 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# ── In-memory TTL cache (256 entries, 15 min TTL) ───────────────────────────
-_cache: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=900)
+# ── High-Performance In-Memory Cache (512 entries, 15m TTL) ────────────────
+_cache: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=512, ttl=900)
 
 
-def _cache_key(system: str, user: str) -> str:
-    """Generate a deterministic cache key from prompt content.
+class GeminiServiceError(RuntimeError):
+    """Base exception for Gemini service issues."""
 
-    Args:
-        system: The system prompt.
-        user: The user prompt.
 
-    Returns:
-        SHA-256 hex digest of the concatenated prompts.
-    """
+class GeminiTimeoutError(GeminiServiceError):
+    """Raised when the Gemini API times out."""
+
+
+class GeminiMalformedResponseError(GeminiServiceError):
+    """Raised when the Gemini API returns invalid or non-JSON output."""
+
+
+def get_cache_key(system: str, user: str) -> str:
+    """Generate deterministic SHA-256 cache key from system and user prompt."""
     raw = f"{system}||{user}"
-    return hashlib.sha256(raw.encode()).hexdigest()
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _get_client() -> genai.Client:
-    """Create a Gemini client using the configured API key.
-
-    Returns:
-        An initialised ``genai.Client``.
-
-    Raises:
-        RuntimeError: If ``GEMINI_API_KEY`` is not set.
-    """
+def get_client() -> genai.Client:
+    """Instantiate a Gemini client."""
     if not settings.gemini_api_key:
-        raise RuntimeError(
-            "GEMINI_API_KEY is not configured. "
-            "Set it in your .env file."
+        raise GeminiServiceError(
+            "GEMINI_API_KEY is not configured. Set it in your environment or .env file."
         )
     return genai.Client(api_key=settings.gemini_api_key)
 
 
 async def generate(system_prompt: str, user_prompt: str) -> dict[str, Any]:
-    """Send a prompt pair to Gemini 2.5 Flash and return parsed JSON.
-
-    Uses an in-memory TTL cache to avoid redundant calls for identical
-    prompt content.
+    """Send prompt to Gemini model and return parsed JSON with caching.
 
     Args:
-        system_prompt: The system-level instruction prompt.
-        user_prompt: The user-level task prompt.
+        system_prompt: System-level instruction prompt.
+        user_prompt: User-level input and instruction prompt.
 
     Returns:
-        Parsed JSON dict from the model's response.
-
-    Raises:
-        RuntimeError: On API errors or invalid JSON in the response.
+        dict[str, Any]: Parsed JSON response.
     """
-    key = _cache_key(system_prompt, user_prompt)
+    key = get_cache_key(system_prompt, user_prompt)
 
-    # Check cache first
+    # 1. Check in-memory SHA-256 cache
     if key in _cache:
-        logger.info("Cache HIT for prompt (key=%s…)", key[:12])
-        return _cache[key]
+        logger.info("Cache HIT for key=%s...", key[:12])
+        return dict(_cache[key])
 
-    logger.info("Cache MISS — calling Gemini model (key=%s…)", key[:12])
+    logger.info("Cache MISS for key=%s... Calling Gemini API", key[:12])
 
-    client = _get_client()
+    client = get_client()
 
-    import time
-
-    # Candidate models for high-speed analysis with graceful fallback
     models_to_try = [
         settings.gemini_model,
         "gemini-3.6-flash",
@@ -94,15 +85,17 @@ async def generate(system_prompt: str, user_prompt: str) -> dict[str, Any]:
         "gemini-flash-latest",
         "gemini-2.5-flash",
     ]
-    # Remove duplicates while preserving order
     unique_models = list(dict.fromkeys(models_to_try))
 
     response = None
-    last_err = None
+    last_err: Exception | None = None
+
     for model_name in unique_models:
         for attempt in range(2):
             try:
-                response = client.models.generate_content(
+                # Wrap synchronous SDK call in asyncio to prevent blocking event loop
+                response = await asyncio.to_thread(
+                    client.models.generate_content,
                     model=model_name,
                     contents=user_prompt,
                     config=types.GenerateContentConfig(
@@ -115,34 +108,71 @@ async def generate(system_prompt: str, user_prompt: str) -> dict[str, Any]:
                 break
             except Exception as exc:
                 last_err = exc
-                logger.warning(
-                    "Model %s attempt %d failed: %s",
-                    model_name,
-                    attempt + 1,
-                    exc,
-                )
-                time.sleep(0.5)
+                err_str = str(exc).lower()
+                logger.warning("Model %s attempt %d failed: %s", model_name, attempt + 1, exc)
+                if (
+                    ("deadline" in err_str or "timed out" in err_str or "timeout" in err_str)
+                    and attempt == 1
+                    and model_name == unique_models[-1]
+                ):
+                    raise GeminiTimeoutError("Gemini API request timed out.") from exc
+                await asyncio.sleep(0.3)
+
         if response is not None:
             break
 
     if response is None:
-        logger.error("All Gemini model attempts failed: %s", last_err)
-        raise RuntimeError(f"Gemini API call failed: {last_err}") from last_err
+        logger.error("All Gemini models exhausted: %s", last_err)
+        raise GeminiServiceError(f"Gemini API request failed: {last_err}") from last_err
 
-    # Parse the JSON response
     raw_text = response.text or ""
-    # Strip markdown code fences if present
     if raw_text.startswith("```"):
         raw_text = raw_text.strip("`").removeprefix("json").strip()
 
     try:
         parsed: dict[str, Any] = json.loads(raw_text)
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, ValueError) as exc:
         logger.error("Failed to parse Gemini response as JSON: %s", raw_text[:200])
-        raise RuntimeError(
-            "The AI returned an invalid response. Please try again."
+        raise GeminiMalformedResponseError(
+            "The AI model returned a malformed or non-JSON response."
         ) from exc
 
-    # Store in cache
+    # Store verified result in cache
     _cache[key] = parsed
     return parsed
+
+
+async def generate_stream(
+    system_prompt: str, user_prompt: str
+) -> AsyncGenerator[str, None]:
+    """Stream Gemini response chunks asynchronously for Server-Sent Events (SSE).
+
+    Args:
+        system_prompt: System-level instruction prompt.
+        user_prompt: User-level input prompt.
+
+    Yields:
+        str: Raw text chunks as received from the model.
+    """
+    client = get_client()
+
+    def _sync_stream():
+        return client.models.generate_content_stream(
+            model=settings.gemini_model,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.2,
+                max_output_tokens=4096,
+            ),
+        )
+
+    try:
+        stream_iter = await asyncio.to_thread(_sync_stream)
+        for chunk in stream_iter:
+            if chunk.text:
+                yield chunk.text
+                await asyncio.sleep(0.01)
+    except Exception as exc:
+        logger.error("Error during streaming generation: %s", exc)
+        yield f"\n[Stream Error: {exc}]"

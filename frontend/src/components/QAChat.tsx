@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { chatAboutDocument } from "@/lib/api";
+import { chatAboutDocument, chatAboutDocumentStream } from "@/lib/api";
 import type { LoadingState, ChatResponse } from "@/types";
 
 /**
@@ -61,25 +61,51 @@ export default function QAChat() {
       };
 
       setMessages((prev) => [...prev, userMsg]);
-      setStatus("loading");
+      const botMsgId = `bot-${Date.now()}`;
+      const placeholderBotMsg: ChatMessage = {
+        id: botMsgId,
+        sender: "assistant",
+        text: "",
+        confidence: "high",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
 
+      setMessages((prev) => [...prev, placeholderBotMsg]);
+      setStatus("loading");
       setTimeout(scrollToBottom, 50);
 
       try {
-        const response = await chatAboutDocument({
-          document_text: documentText,
-          question: userText,
-        });
+        let accumulated = "";
+        await chatAboutDocumentStream(
+          {
+            document_text: documentText,
+            question: userText,
+          },
+          (chunk: string) => {
+            accumulated += chunk;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === botMsgId ? { ...msg, text: accumulated } : msg
+              )
+            );
+            scrollToBottom();
+          }
+        );
 
-        const botMsg: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: "assistant",
-          text: response.answer,
-          confidence: response.confidence,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-
-        setMessages((prev) => [...prev, botMsg]);
+        if (!accumulated) {
+          // Fallback to standard request if stream produced no chunks
+          const response = await chatAboutDocument({
+            document_text: documentText,
+            question: userText,
+          });
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMsgId
+                ? { ...msg, text: response.answer, confidence: response.confidence }
+                : msg
+            )
+          );
+        }
         setStatus("success");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to obtain answer.");

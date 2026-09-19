@@ -15,6 +15,10 @@ export interface SummaryResponse {
   summary: string;
   /** Bullet-point key takeaways. */
   key_points: string[];
+  /** Actionable checklist of obligations, deadlines, and rights. */
+  actionable_checklist?: string[];
+  /** Recommended potential next steps for the user. */
+  next_steps?: string[];
   /** Character count of the uploaded document. */
   original_length: number;
 }
@@ -37,6 +41,8 @@ export interface ComparisonResponse {
   overall_summary: string;
   /** Detailed per-clause comparison list. */
   items: ComparisonItem[];
+  /** Key decisions or negotiation points between the two versions. */
+  actionable_takeaways?: string[];
 }
 
 /** A single flagged risk in a legal document. */
@@ -57,6 +63,8 @@ export interface RiskResponse {
   overall_assessment: string;
   /** List of flagged risks. */
   risks: RiskItem[];
+  /** Priority remediation steps before signing or agreeing. */
+  actionable_next_steps?: string[];
 }
 
 /** Request body for the Q&A chat endpoint. */
@@ -73,12 +81,20 @@ export interface ChatResponse {
   answer: string;
   /** Confidence qualifier. */
   confidence: "high" | "moderate" | "low";
+  /** Optional procedural suggestion or caveat. */
+  actionable_note?: string | null;
 }
 
-/** Generic API error response. */
+/** Generic standardized API error response. */
 export interface ApiError {
-  /** Error detail message. */
-  detail: string;
+  /** Machine-readable error code. */
+  code?: string;
+  /** Human-readable message. */
+  message?: string;
+  /** Additional error details. */
+  details?: unknown;
+  /** Backwards-compatible detail string. */
+  detail?: string;
 }
 
 /* ── UI State Types ──────────────────────────────────────────────────────── */

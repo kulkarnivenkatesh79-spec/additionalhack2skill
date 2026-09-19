@@ -168,7 +168,7 @@ export default function DocumentSimplifier() {
                   style={{
                     listStyle: "none",
                     padding: 0,
-                    margin: 0,
+                    margin: "0 0 1.5rem 0",
                     display: "flex",
                     flexDirection: "column",
                     gap: "0.5rem",
@@ -200,6 +200,94 @@ export default function DocumentSimplifier() {
                   ))}
                 </ul>
               </>
+            )}
+
+            {result.actionable_checklist && result.actionable_checklist.length > 0 && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    margin: "0 0 0.75rem 0",
+                    color: "#38bdf8",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <span>📋</span> Actionable Checklist
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {result.actionable_checklist.map((item, idx) => (
+                    <label
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "0.75rem",
+                        padding: "0.625rem 0.875rem",
+                        borderRadius: "0.5rem",
+                        background: "rgba(15, 23, 42, 0.5)",
+                        border: "1px solid var(--color-border)",
+                        fontSize: "0.875rem",
+                        color: "var(--color-text-secondary)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        style={{ marginTop: "0.2rem", accentColor: "var(--color-accent)" }}
+                      />
+                      <span>{item}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {result.next_steps && result.next_steps.length > 0 && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    margin: "0 0 0.75rem 0",
+                    color: "#a78bfa",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <span>🚀</span> Potential Next Steps
+                </h3>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {result.next_steps.map((step, idx) => (
+                    <li
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "0.5rem",
+                        color: "var(--color-text-secondary)",
+                        fontSize: "0.875rem",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      <span style={{ color: "#a78bfa", flexShrink: 0 }}>→</span>
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             <div

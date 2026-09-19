@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import FileUpload from "./FileUpload";
 import { highlightRisks } from "@/lib/api";
 import type { LoadingState, RiskResponse, RiskItem } from "@/types";
@@ -10,11 +10,7 @@ import type { LoadingState, RiskResponse, RiskItem } from "@/types";
  *
  * Scans uploaded legal contracts to flag high, medium, and low risks,
  * hidden obligations, critical clauses, and ambiguities.
- *
- * Implements WCAG 2.1 AA compliant color-contrast risk indicators and
- * ARIA live updates for accessible alerts.
- *
- * @returns The Risk Highlighter panel JSX element.
+ * Optimized with useMemo and useCallback for maximum rendering efficiency.
  */
 export default function RiskHighlighter() {
   const [file, setFile] = useState<File | null>(null);
@@ -39,7 +35,7 @@ export default function RiskHighlighter() {
     }
   }, [file]);
 
-  const getRiskBadgeClass = (level: RiskItem["risk_level"]): string => {
+  const getRiskBadgeClass = useCallback((level: RiskItem["risk_level"]): string => {
     switch (level.toLowerCase()) {
       case "high":
         return "risk-badge high";
@@ -49,7 +45,17 @@ export default function RiskHighlighter() {
       default:
         return "risk-badge low";
     }
-  };
+  }, []);
+
+  const risks = result?.risks;
+  const riskStats = useMemo(() => {
+    if (!risks) return { high: 0, medium: 0, low: 0 };
+    return {
+      high: risks.filter((r) => r.risk_level.toLowerCase() === "high").length,
+      medium: risks.filter((r) => r.risk_level.toLowerCase() === "medium").length,
+      low: risks.filter((r) => r.risk_level.toLowerCase() === "low").length,
+    };
+  }, [risks]);
 
   return (
     <article
@@ -146,16 +152,23 @@ export default function RiskHighlighter() {
             style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}
           >
             <div>
-              <h3
-                style={{
-                  fontSize: "1.125rem",
-                  fontWeight: 600,
-                  margin: "0 0 0.5rem 0",
-                  color: "var(--color-accent-hover)",
-                }}
-              >
-                Overall Risk Assessment
-              </h3>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    margin: 0,
+                    color: "var(--color-accent-hover)",
+                  }}
+                >
+                  Overall Risk Assessment
+                </h3>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  {riskStats.high > 0 && <span className="risk-badge high">{riskStats.high} High</span>}
+                  {riskStats.medium > 0 && <span className="risk-badge medium">{riskStats.medium} Medium</span>}
+                  {riskStats.low > 0 && <span className="risk-badge low">{riskStats.low} Low</span>}
+                </div>
+              </div>
               <p
                 style={{
                   lineHeight: 1.7,
@@ -167,6 +180,51 @@ export default function RiskHighlighter() {
                 {result.overall_assessment}
               </p>
             </div>
+
+            {result.actionable_next_steps && result.actionable_next_steps.length > 0 && (
+              <div style={{ padding: "1.25rem", borderRadius: "var(--radius-md)", background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.25)" }}>
+                <h3
+                  style={{
+                    fontSize: "1.0625rem",
+                    fontWeight: 700,
+                    margin: "0 0 0.75rem 0",
+                    color: "#f87171",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <span>🚨</span> Priority Remediation Steps
+                </h3>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {result.actionable_next_steps.map((step, idx) => (
+                    <li
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "0.5rem",
+                        color: "var(--color-text-primary)",
+                        fontSize: "0.875rem",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      <span style={{ color: "#f87171", flexShrink: 0 }}>⚠️</span>
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {result.risks.length > 0 ? (
               <div>

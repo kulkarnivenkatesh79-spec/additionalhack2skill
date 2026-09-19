@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import FileUpload from "./FileUpload";
 import { compareContracts } from "@/lib/api";
 import type { ComparisonResponse, LoadingState } from "@/types";
@@ -10,8 +10,7 @@ import type { ComparisonResponse, LoadingState } from "@/types";
  *
  * Allows users to upload two contracts and receive a side-by-side
  * analysis of differences, similarities, and modifications.
- *
- * @returns The Contract Comparator panel JSX element.
+ * Highly optimized with useMemo and useCallback.
  */
 export default function ContractComparator() {
   const [fileA, setFileA] = useState<File | null>(null);
@@ -37,8 +36,8 @@ export default function ContractComparator() {
     }
   }, [fileA, fileB]);
 
-  /** Get badge class for a difference type. */
-  const getDiffBadgeClass = (type: string): string => {
+  /** Memoized badge class resolver. */
+  const getDiffBadgeClass = useCallback((type: string): string => {
     const classes: Record<string, string> = {
       added: "diff-badge added",
       removed: "diff-badge removed",
@@ -46,7 +45,12 @@ export default function ContractComparator() {
       identical: "diff-badge identical",
     };
     return classes[type] || "diff-badge identical";
-  };
+  }, []);
+
+  /** Memoized clause items list. */
+  const memoizedItems = useMemo(() => {
+    return result?.items || [];
+  }, [result?.items]);
 
   return (
     <article
@@ -177,7 +181,52 @@ export default function ContractComparator() {
               {result.overall_summary}
             </p>
 
-            {result.items.length > 0 && (
+            {result.actionable_takeaways && result.actionable_takeaways.length > 0 && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    margin: "0 0 0.75rem 0",
+                    color: "#38bdf8",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <span>⚖️</span> Actionable Takeaways & Decision Points
+                </h3>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {result.actionable_takeaways.map((takeaway, idx) => (
+                    <li
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "0.5rem",
+                        color: "var(--color-text-secondary)",
+                        fontSize: "0.875rem",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      <span style={{ color: "#38bdf8", flexShrink: 0 }}>💡</span>
+                      {takeaway}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {memoizedItems.length > 0 && (
               <>
                 <h3
                   style={{
@@ -196,7 +245,7 @@ export default function ContractComparator() {
                     gap: "0.75rem",
                   }}
                 >
-                  {result.items.map((item, i) => (
+                  {memoizedItems.map((item, i) => (
                     <div
                       key={i}
                       style={{

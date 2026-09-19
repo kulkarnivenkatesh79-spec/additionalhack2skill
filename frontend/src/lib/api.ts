@@ -111,3 +111,59 @@ export async function chatAboutDocument(
     body: JSON.stringify(request),
   });
 }
+
+/**
+ * Stream an answer about a legal document chunk-by-chunk using Server-Sent Events.
+ *
+ * @param request - The chat request with document text and question.
+ * @param onChunk - Callback invoked with each received text chunk.
+ */
+export async function chatAboutDocumentStream(
+  request: ChatRequest,
+  onChunk: (chunk: string) => void
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({
+      detail: `Stream request failed with status ${response.status}`,
+    }));
+    throw new Error(errorBody.detail ?? "Streaming error occurred.");
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("ReadableStream not supported by browser environment.");
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const raw = line.slice(6).trim();
+        if (raw === "[DONE]") return;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.chunk) {
+            onChunk(parsed.chunk);
+          }
+        } catch {
+          // ignore non-json line
+        }
+      }
+    }
+  }
+}
