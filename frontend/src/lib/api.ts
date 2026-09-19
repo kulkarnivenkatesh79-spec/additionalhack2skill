@@ -16,7 +16,11 @@ import type {
 } from "@/types";
 
 /** Base URL for the API, read from environment variable. */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8008";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "https://additionalhack2skill.onrender.com"
+    : "http://localhost:8008");
 
 /**
  * Generic fetch wrapper with error handling.
