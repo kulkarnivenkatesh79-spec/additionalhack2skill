@@ -30,6 +30,7 @@ from app.services.gemini_service import generate, generate_stream
 from app.services.prompt_templates import (
     build_chat_prompt,
     build_compare_prompt,
+    build_natural_chat_prompt,
     build_risk_prompt,
     build_summarize_prompt,
     sanitize_input,
@@ -164,7 +165,7 @@ async def chat_stream_document(
     """Stream Gemini response in real time to eliminate perceived latency."""
     safe_text = sanitize_input(body.document_text)
     safe_question = sanitize_input(body.question)
-    system, user = build_chat_prompt(safe_text, safe_question)
+    system, user = build_natural_chat_prompt(safe_text, safe_question)
 
     async def event_generator() -> AsyncGenerator[str, None]:
         async for chunk in generate_stream(system, user):

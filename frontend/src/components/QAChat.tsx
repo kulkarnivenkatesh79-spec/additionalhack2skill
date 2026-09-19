@@ -15,17 +15,28 @@ interface ChatMessage {
   timestamp: string;
 }
 
-/**
- * Interactive Q&A Chatbot Tool.
- *
- * Allows users to paste or upload legal context and converse directly with
- * Gemini 2.5 Flash to extract answers, clarify ambiguous clauses, or check definitions.
- *
- * Accessible via keyboard navigation, explicit focus management, and
- * `aria-live="polite"` conversational updates.
- *
- * @returns The Q&A Chat panel JSX element.
- */
+/** Helper to ensure clean, natural conversational text without accidental JSON artifacts. */
+function cleanResponseText(raw: string): string {
+  let text = raw.trim();
+  if (text.startsWith("```json") || text.startsWith("```")) {
+    text = text.replace(/^```json|^```|```$/g, "").trim();
+  }
+  if (text.startsWith("{") && text.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.answer) {
+        let res = parsed.answer;
+        if (parsed.actionable_note) {
+          res += `\n\n💡 Practical Tip: ${parsed.actionable_note}`;
+        }
+        return res;
+      }
+    } catch {
+      // Not JSON, return as is
+    }
+  }
+  return text;
+}
 export default function QAChat() {
   const [documentText, setDocumentText] = useState<string>("");
   const [inputQuestion, setInputQuestion] = useState<string>("");
@@ -83,9 +94,10 @@ export default function QAChat() {
           },
           (chunk: string) => {
             accumulated += chunk;
+            const cleaned = cleanResponseText(accumulated);
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === botMsgId ? { ...msg, text: accumulated } : msg
+                msg.id === botMsgId ? { ...msg, text: cleaned } : msg
               )
             );
             scrollToBottom();
@@ -98,11 +110,20 @@ export default function QAChat() {
             document_text: documentText,
             question: userText,
           });
+          const cleanAns = cleanResponseText(response.answer);
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botMsgId
-                ? { ...msg, text: response.answer, confidence: response.confidence }
+                ? { ...msg, text: cleanAns, confidence: response.confidence }
                 : msg
+            )
+          );
+        } else {
+          // Final clean on complete message
+          const finalClean = cleanResponseText(accumulated);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMsgId ? { ...msg, text: finalClean } : msg
             )
           );
         }
@@ -147,18 +168,60 @@ export default function QAChat() {
       </div>
 
       <div className="glass-card" style={{ padding: "1.5rem" }}>
-        <label
-          htmlFor="doc-context"
-          style={{
-            display: "block",
-            fontSize: "0.875rem",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            color: "var(--color-text-secondary)",
-          }}
-        >
-          Active Document Text / Context
-        </label>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          <label
+            htmlFor="doc-context"
+            style={{
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            Active Document Text / Context
+          </label>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setDocumentText(
+                  "STANDARD CONSULTING AGREEMENT\n1. Services: Consultant will provide software engineering services.\n2. Compensation: $75 per hour, invoiced bi-weekly, net 15 days.\n3. Term & Termination: Either party may terminate with 14 days written notice.\n4. Intellectual Property: All work product created under this Agreement shall belong solely to Client.\n5. Indemnification: Consultant agrees to defend and hold harmless Client against any claims arising from Consultant's gross negligence."
+                );
+                setInputQuestion("What is the termination notice period and who owns the work product?");
+              }}
+              style={{
+                fontSize: "0.75rem",
+                padding: "0.25rem 0.5rem",
+                borderRadius: "0.375rem",
+                background: "rgba(139, 92, 246, 0.15)",
+                color: "var(--color-accent-hover)",
+                border: "1px solid rgba(139, 92, 246, 0.3)",
+                cursor: "pointer",
+              }}
+            >
+              📋 Load Sample Contract
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDocumentText(
+                  "NON-DISCLOSURE AGREEMENT (NDA)\n1. Confidential Information: Technical, financial, and business data.\n2. Non-Disclosure Period: 2 years from disclosure date.\n3. Exclusions: Publicly known info or information independently developed.\n4. Return of Materials: Promptly within 10 days of request.\n5. Governing Law: State of California."
+                );
+                setInputQuestion("How long do the confidentiality obligations last?");
+              }}
+              style={{
+                fontSize: "0.75rem",
+                padding: "0.25rem 0.5rem",
+                borderRadius: "0.375rem",
+                background: "rgba(56, 189, 248, 0.15)",
+                color: "#38bdf8",
+                border: "1px solid rgba(56, 189, 248, 0.3)",
+                cursor: "pointer",
+              }}
+            >
+              🔒 Load Sample NDA
+            </button>
+          </div>
+        </div>
         <textarea
           id="doc-context"
           rows={5}

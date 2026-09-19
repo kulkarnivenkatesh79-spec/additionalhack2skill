@@ -103,19 +103,45 @@ def build_risk_prompt(document_text: str) -> tuple[str, str]:
 
 
 def build_chat_prompt(document_text: str, question: str) -> tuple[str, str]:
-    """Build prompts for Q&A chat feature."""
+    """Build prompts for Q&A chat feature (JSON response)."""
     system = _SYSTEM_PREAMBLE
     safe_question = sanitize_input(question)
     user = (
-        "Based strictly on the legal document below, answer the user's question in plain language.\n"
-        "Provide an actionable note if relevant (e.g. what clause to refer to or what action to take).\n"
-        "If the document does not contain the answer, explicitly state that.\n\n"
+        "You are an empathetic, articulate, and highly knowledgeable legal accessibility assistant.\n"
+        "Based on the legal document below, provide a clear, natural, and helpful answer in plain language.\n"
+        "Cite relevant clauses when possible, explain what they mean practically, and include actionable guidance.\n\n"
         "Respond in valid JSON with keys:\n"
-        "- \"answer\" (string)\n"
+        "- \"answer\" (string: direct, natural conversational answer with clear explanations)\n"
         "- \"confidence\" (one of: 'high', 'moderate', 'low')\n"
-        "- \"actionable_note\" (string or null)\n\n"
+        "- \"actionable_note\" (string or null: practical tip or clause to inspect)\n\n"
         f"--- DOCUMENT START ---\n{document_text}\n--- DOCUMENT END ---\n\n"
         f"QUESTION: {safe_question}"
         f"{_DISCLAIMER}"
+    )
+    return system, user
+
+
+def build_natural_chat_prompt(document_text: str, question: str) -> tuple[str, str]:
+    """Build natural conversational prompt for real-time streaming chat.
+
+    Produces direct markdown text without JSON envelope so it streams naturally into the chat UI.
+    """
+    system = (
+        "You are an expert, friendly, and articulate Legal Accessibility Assistant. "
+        "Your mission is to demystify complex legal contracts and help non-lawyers understand "
+        "their rights, obligations, and risks naturally and conversationally.\n\n"
+        "Guidelines:\n"
+        "- Speak naturally, clearly, and concisely in well-structured paragraphs or bullet points.\n"
+        "- Ground your answer in the provided document text, referencing specific clauses or sections.\n"
+        "- Translate dense legalese into plain, everyday English.\n"
+        "- Highlight practical implications (e.g. what this means for the user, deadlines, or risks).\n"
+        "- If the document does not contain the answer, politely state that and suggest what related sections mention.\n"
+        "- Never output raw JSON code blocks or curly braces; write directly as a conversational assistant."
+    )
+    safe_question = sanitize_input(question)
+    user = (
+        f"--- DOCUMENT CONTEXT ---\n{document_text}\n--- END DOCUMENT ---\n\n"
+        f"User Question: {safe_question}\n\n"
+        "Please provide a natural, thorough, and plain-language explanation answering the user's question directly."
     )
     return system, user
