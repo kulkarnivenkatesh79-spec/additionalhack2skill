@@ -14,14 +14,18 @@ import type { LoadingState, SummaryResponse } from "@/types";
  *
  * @returns The Document Simplifier panel JSX element.
  */
-export default function DocumentSimplifier() {
+interface DocumentSimplifierProps {
+  isAcknowledged?: boolean;
+}
+
+export default function DocumentSimplifier({ isAcknowledged = true }: DocumentSimplifierProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<SummaryResponse | null>(null);
   const [status, setStatus] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(async () => {
-    if (!file) return;
+    if (!file || !isAcknowledged) return;
 
     setStatus("loading");
     setError(null);
@@ -35,7 +39,7 @@ export default function DocumentSimplifier() {
       setError(err instanceof Error ? err.message : "An error occurred.");
       setStatus("error");
     }
-  }, [file]);
+  }, [file, isAcknowledged]);
 
   return (
     <article
@@ -75,11 +79,11 @@ export default function DocumentSimplifier() {
           disabled={status === "loading"}
         />
 
-        <div style={{ marginTop: "1rem" }}>
+        <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <button
             className="btn-primary"
             onClick={handleSubmit}
-            disabled={!file || status === "loading"}
+            disabled={!file || status === "loading" || !isAcknowledged}
             aria-busy={status === "loading"}
           >
             {status === "loading" ? (
@@ -91,6 +95,12 @@ export default function DocumentSimplifier() {
               "Simplify Document"
             )}
           </button>
+
+          {!isAcknowledged && (
+            <span style={{ fontSize: "0.8125rem", color: "#f59e0b" }}>
+              ⚠️ Please check <strong>&ldquo;Acknowledged&rdquo;</strong> on the disclaimer banner above to proceed.
+            </span>
+          )}
         </div>
       </div>
 

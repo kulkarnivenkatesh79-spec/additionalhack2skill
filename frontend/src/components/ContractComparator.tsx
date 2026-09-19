@@ -12,7 +12,11 @@ import type { ComparisonResponse, LoadingState } from "@/types";
  * analysis of differences, similarities, and modifications.
  * Highly optimized with useMemo and useCallback.
  */
-export default function ContractComparator() {
+interface ContractComparatorProps {
+  isAcknowledged?: boolean;
+}
+
+export default function ContractComparator({ isAcknowledged = true }: ContractComparatorProps) {
   const [fileA, setFileA] = useState<File | null>(null);
   const [fileB, setFileB] = useState<File | null>(null);
   const [result, setResult] = useState<ComparisonResponse | null>(null);
@@ -20,7 +24,7 @@ export default function ContractComparator() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(async () => {
-    if (!fileA || !fileB) return;
+    if (!fileA || !fileB || !isAcknowledged) return;
 
     setStatus("loading");
     setError(null);
@@ -34,7 +38,7 @@ export default function ContractComparator() {
       setError(err instanceof Error ? err.message : "An error occurred.");
       setStatus("error");
     }
-  }, [fileA, fileB]);
+  }, [fileA, fileB, isAcknowledged]);
 
   /** Memoized badge class resolver. */
   const getDiffBadgeClass = useCallback((type: string): string => {
@@ -104,11 +108,11 @@ export default function ContractComparator() {
           />
         </div>
 
-        <div style={{ marginTop: "1rem" }}>
+        <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <button
             className="btn-primary"
             onClick={handleSubmit}
-            disabled={!fileA || !fileB || status === "loading"}
+            disabled={!fileA || !fileB || status === "loading" || !isAcknowledged}
             aria-busy={status === "loading"}
           >
             {status === "loading" ? (
@@ -120,6 +124,12 @@ export default function ContractComparator() {
               "Compare Contracts"
             )}
           </button>
+
+          {!isAcknowledged && (
+            <span style={{ fontSize: "0.8125rem", color: "#f59e0b" }}>
+              ⚠️ Please check <strong>&ldquo;Acknowledged&rdquo;</strong> on the disclaimer banner above to proceed.
+            </span>
+          )}
         </div>
       </div>
 

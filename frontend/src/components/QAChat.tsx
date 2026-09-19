@@ -37,7 +37,11 @@ function cleanResponseText(raw: string): string {
   }
   return text;
 }
-export default function QAChat() {
+interface QAChatProps {
+  isAcknowledged?: boolean;
+}
+
+export default function QAChat({ isAcknowledged = true }: QAChatProps) {
   const [documentText, setDocumentText] = useState<string>("");
   const [inputQuestion, setInputQuestion] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -53,7 +57,7 @@ export default function QAChat() {
   const handleSendMessage = useCallback(
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
-      if (!inputQuestion.trim()) return;
+      if (!inputQuestion.trim() || !isAcknowledged) return;
 
       if (!documentText.trim()) {
         setError("Please paste the legal document text first to query against.");
@@ -135,7 +139,7 @@ export default function QAChat() {
         setTimeout(scrollToBottom, 50);
       }
     },
-    [inputQuestion, documentText]
+    [inputQuestion, documentText, isAcknowledged]
   );
 
   return (
@@ -378,11 +382,17 @@ export default function QAChat() {
           <button
             type="submit"
             className="btn-primary"
-            disabled={status === "loading" || !inputQuestion.trim()}
+            disabled={status === "loading" || !inputQuestion.trim() || !isAcknowledged}
           >
             Send
           </button>
         </form>
+
+        {!isAcknowledged && (
+          <div style={{ marginTop: "0.75rem", fontSize: "0.8125rem", color: "#f59e0b" }}>
+            ⚠️ Please check <strong>&ldquo;Acknowledged&rdquo;</strong> on the disclaimer banner above to chat.
+          </div>
+        )}
       </div>
     </article>
   );

@@ -91,6 +91,7 @@ const QAChat = dynamic(
  */
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<ToolTab>("simplifier");
+  const [acknowledged, setAcknowledged] = useState<boolean>(false);
 
   return (
     <div
@@ -105,7 +106,10 @@ export default function DashboardPage() {
     >
       {/* 1. Prominent Mandatory Disclaimer Component */}
       <section aria-label="Important Legal Notice">
-        <Disclaimer />
+        <Disclaimer
+          acknowledged={acknowledged}
+          onAcknowledgeChange={setAcknowledged}
+        />
       </section>
 
       {/* Hero Intro Header */}
@@ -163,10 +167,16 @@ export default function DashboardPage() {
 
       {/* Active Tab Panel with Lazy Loading */}
       <section style={{ minHeight: "450px" }}>
-        {activeTab === "simplifier" && <DocumentSimplifier />}
-        {activeTab === "comparator" && <ContractComparator />}
-        {activeTab === "risks" && <RiskHighlighter />}
-        {activeTab === "chat" && <QAChat />}
+        {activeTab === "simplifier" && (
+          <DocumentSimplifier isAcknowledged={acknowledged} />
+        )}
+        {activeTab === "comparator" && (
+          <ContractComparator isAcknowledged={acknowledged} />
+        )}
+        {activeTab === "risks" && (
+          <RiskHighlighter isAcknowledged={acknowledged} />
+        )}
+        {activeTab === "chat" && <QAChat isAcknowledged={acknowledged} />}
       </section>
     </div>
   );

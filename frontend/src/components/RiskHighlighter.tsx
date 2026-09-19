@@ -12,14 +12,18 @@ import type { LoadingState, RiskResponse, RiskItem } from "@/types";
  * hidden obligations, critical clauses, and ambiguities.
  * Optimized with useMemo and useCallback for maximum rendering efficiency.
  */
-export default function RiskHighlighter() {
+interface RiskHighlighterProps {
+  isAcknowledged?: boolean;
+}
+
+export default function RiskHighlighter({ isAcknowledged = true }: RiskHighlighterProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<RiskResponse | null>(null);
   const [status, setStatus] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(async () => {
-    if (!file) return;
+    if (!file || !isAcknowledged) return;
 
     setStatus("loading");
     setError(null);
@@ -33,7 +37,7 @@ export default function RiskHighlighter() {
       setError(err instanceof Error ? err.message : "An error occurred during risk analysis.");
       setStatus("error");
     }
-  }, [file]);
+  }, [file, isAcknowledged]);
 
   const getRiskBadgeClass = useCallback((level: RiskItem["risk_level"]): string => {
     switch (level.toLowerCase()) {
@@ -95,11 +99,11 @@ export default function RiskHighlighter() {
           disabled={status === "loading"}
         />
 
-        <div style={{ marginTop: "1rem" }}>
+        <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <button
             className="btn-primary"
             onClick={handleSubmit}
-            disabled={!file || status === "loading"}
+            disabled={!file || status === "loading" || !isAcknowledged}
             aria-busy={status === "loading"}
           >
             {status === "loading" ? (
@@ -111,6 +115,12 @@ export default function RiskHighlighter() {
               "Scan for Risks"
             )}
           </button>
+
+          {!isAcknowledged && (
+            <span style={{ fontSize: "0.8125rem", color: "#f59e0b" }}>
+              ⚠️ Please check <strong>&ldquo;Acknowledged&rdquo;</strong> on the disclaimer banner above to proceed.
+            </span>
+          )}
         </div>
       </div>
 

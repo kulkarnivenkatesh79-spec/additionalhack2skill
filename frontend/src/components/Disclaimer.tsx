@@ -8,8 +8,22 @@ import React, { useState } from "react";
  * Sticky across all tools, accessible (WCAG 2.1 AA compliant, role="alert"),
  * and prominent with clear separation from legal advice.
  */
-export default function Disclaimer() {
-  const [acknowledged, setAcknowledged] = useState(false);
+interface DisclaimerProps {
+  acknowledged?: boolean;
+  onAcknowledgeChange?: (acknowledged: boolean) => void;
+}
+
+export default function Disclaimer({
+  acknowledged: controlledAck,
+  onAcknowledgeChange,
+}: DisclaimerProps) {
+  const [internalAck, setInternalAck] = useState(false);
+  const isChecked = controlledAck !== undefined ? controlledAck : internalAck;
+
+  const handleToggle = (val: boolean) => {
+    setInternalAck(val);
+    onAcknowledgeChange?.(val);
+  };
 
   return (
     <aside
@@ -57,8 +71,8 @@ export default function Disclaimer() {
       >
         <input
           type="checkbox"
-          checked={acknowledged}
-          onChange={(e) => setAcknowledged(e.target.checked)}
+          checked={isChecked}
+          onChange={(e) => handleToggle(e.target.checked)}
           aria-label="I understand this is AI legal assistance and not legal advice"
           style={{ accentColor: "#f59e0b", cursor: "pointer" }}
         />
