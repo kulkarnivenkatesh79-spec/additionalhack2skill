@@ -17,10 +17,7 @@ import type {
 
 /** Base URL for the API, read from environment variable. */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ??
-  (typeof window !== "undefined" && window.location.hostname !== "localhost"
-    ? "https://additionalhack2skill.onrender.com"
-    : "http://localhost:8008");
+  process.env.NEXT_PUBLIC_API_URL || "https://additionalhack2skill.onrender.com";
 
 /**
  * Generic fetch wrapper with error handling.
