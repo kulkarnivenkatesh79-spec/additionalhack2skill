@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     )
 
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-flash-latest"
+    gemini_model: str = "gemini-3-flash-preview"
     backend_host: str = "0.0.0.0"
     backend_port: int = 8008
     rate_limit: str = "30/minute"
