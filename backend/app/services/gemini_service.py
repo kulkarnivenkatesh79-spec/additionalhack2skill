@@ -77,15 +77,16 @@ async def generate(system_prompt: str, user_prompt: str) -> dict[str, Any]:
 
     client = get_client()
 
+    # Prioritize verified working models, explicitly filtering out deprecated gemini-2.5-flash
     models_to_try = [
-        settings.gemini_model,
-        "gemini-3.6-flash",
-        "gemini-3.7-flash",
-        "gemini-3.5-flash",
         "gemini-flash-latest",
-        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-2.5-pro",
+        settings.gemini_model,
     ]
-    unique_models = list(dict.fromkeys(models_to_try))
+    # Filter out gemini-2.5-flash which returns 404 NOT_FOUND for new API keys
+    unique_models = [m for m in dict.fromkeys(models_to_try) if m and m != "gemini-2.5-flash"]
 
     response = None
     last_err: Exception | None = None
@@ -156,9 +157,15 @@ async def generate_stream(
     """
     client = get_client()
 
+    stream_model = (
+        settings.gemini_model
+        if settings.gemini_model and settings.gemini_model != "gemini-2.5-flash"
+        else "gemini-flash-latest"
+    )
+
     def _sync_stream():
         return client.models.generate_content_stream(
-            model=settings.gemini_model,
+            model=stream_model,
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
